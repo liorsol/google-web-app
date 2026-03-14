@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --card: #ffffff;
+        --text: #203040;
+        --muted: #6c7c8f;
+        --primary: #1976d2;
+        --positive: #2e7d32;
+        --negative: #c62828;
+        --shadow: 0 10px 30px rgba(20, 40, 80, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+      }
+
+      .hidden { display: none !important; }
+      h1, h2, h3 { margin-top: 0; }
+
+      .login-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+
+      .login-card { width: 100%; max-width: 420px; }
+      .field { margin-bottom: 12px; }
+      label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: var(--muted); }
+      input, select, button {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 10px;
+        border: 1px solid #d5deeb;
+        font-size: 1rem;
+      }
+      button {
+        border: 0;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+
+      .budget-circle {
+        width: min(320px, 76vw);
+        aspect-ratio: 1 / 1;
+        border-radius: 50%;
+        margin: 10px auto 20px;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        background: radial-gradient(circle at 30% 30%, #6fb9ff, #1976d2);
+        color: white;
+        box-shadow: 0 12px 35px rgba(25, 118, 210, 0.35);
+        padding: 18px;
+      }
+
+      .budget-value {
+        font-size: clamp(2rem, 7vw, 3.2rem);
+        font-weight: 700;
+        line-height: 1.1;
+      }
+      .budget-label { opacity: 0.95; }
+
+      .ops-list { display: grid; gap: 10px; }
+      .op-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 6px;
+        padding: 12px;
+        border: 1px solid #e2e8f2;
+        border-radius: 10px;
+        background: #fcfdff;
+      }
+      .op-desc { font-weight: 600; }
+      .op-meta { color: var(--muted); font-size: 0.85rem; }
+      .op-amount { font-weight: 700; align-self: center; }
+      .incoming { color: var(--positive); }
+      .outgoing { color: var(--negative); }
+
+      .status { margin: 8px 0 0; font-size: 0.92rem; }
+      .error { color: var(--negative); }
+      .success { color: var(--positive); }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      @media (max-width: 760px) {
+        .grid-2 { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <section id="loginView" class="login-wrap">
+      <div class="card login-card">
+        <h2>Kids Budget Login</h2>
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" />
+        </div>
+        <button id="loginBtn">Login</button>
+        <p id="loginStatus" class="status"></p>
+      </div>
+    </section>
+
+    <section id="appView" class="hidden">
+      <div class="container">
+        <div class="topbar">
+          <div>
+            <h2 id="welcomeTitle"></h2>
+            <small id="roleLabel"></small>
+          </div>
+          <button id="logoutBtn" style="width:auto;padding:10px 16px;">Logout</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div id="parentKidPicker" class="hidden">
+              <div class="field">
+                <label for="kidSelect">Choose kid account</label>
+                <select id="kidSelect"></select>
+              </div>
+            </div>
+
+            <div class="budget-circle">
+              <div class="budget-label">Current Available Budget</div>
+              <div id="budgetValue" class="budget-value">$0.00</div>
+            </div>
+
+            <h3>Operations</h3>
+            <div id="opsList" class="ops-list"></div>
+          </div>
+
+          <div id="parentPanel" class="card hidden">
+            <h3>Parent: Add Operation</h3>
+            <div class="field">
+              <label for="parentKid">Kid</label>
+              <select id="parentKid"></select>
+            </div>
+            <div class="field">
+              <label for="opType">Type</label>
+              <select id="opType">
+                <option value="incoming">Incoming (+)</option>
+                <option value="outgoing">Outgoing (-)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="opAmount">Amount</label>
+              <input id="opAmount" type="number" step="0.01" min="0.01" />
+            </div>
+            <div class="field">
+              <label for="opDescription">Description</label>
+              <input id="opDescription" />
+            </div>
+            <button id="saveOpBtn">Save operation</button>
+            <p id="opStatus" class="status"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const state = {
+        sessionToken: '',
+        user: null,
+        selectedChildId: ''
+      };
+
+      const el = (id) => document.getElementById(id);
+      const money = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0);
+
+      function setStatus(id, msg, type) {
+        const node = el(id);
+        node.textContent = msg || '';
+        node.className = `status ${type || ''}`;
+      }
+
+      function callServer(method, ...args) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler((err) => reject(new Error(err.message || 'Server error')))
+            [method](...args);
+        });
+      }
+
+      async function handleLogin() {
+        try {
+          setStatus('loginStatus', 'Signing in...', '');
+          const res = await callServer('login', {
+            username: el('username').value,
+            password: el('password').value
+          });
+
+          if (!res.success) {
+            setStatus('loginStatus', res.message || 'Login failed', 'error');
+            return;
+          }
+
+          state.sessionToken = res.sessionToken;
+          state.user = res.user;
+          state.selectedChildId = res.user.role === 'kid' ? res.user.childId : '';
+
+          el('loginView').classList.add('hidden');
+          el('appView').classList.remove('hidden');
+
+          el('welcomeTitle').textContent = `Hello, ${state.user.displayName}`;
+          el('roleLabel').textContent = `Role: ${state.user.role}`;
+          setStatus('loginStatus', '', '');
+
+          await loadDashboard();
+        } catch (error) {
+          setStatus('loginStatus', error.message, 'error');
+        }
+      }
+
+      function renderKidSelectors(kids) {
+        const options = ['<option value="">-- select --</option>']
+          .concat(kids.map((k) => `<option value="${k.childId}">${k.displayName} (${k.childId})</option>`))
+          .join('');
+
+        el('kidSelect').innerHTML = options;
+        el('parentKid').innerHTML = options;
+
+        if (state.selectedChildId) {
+          el('kidSelect').value = state.selectedChildId;
+          el('parentKid').value = state.selectedChildId;
+        }
+      }
+
+      function renderOperations(operations) {
+        const list = el('opsList');
+        if (!operations.length) {
+          list.innerHTML = '<div class="op-meta">No operations yet.</div>';
+          return;
+        }
+
+        list.innerHTML = operations.map((op) => {
+          const cls = op.amount >= 0 ? 'incoming' : 'outgoing';
+          const date = op.timestamp ? new Date(op.timestamp).toLocaleString() : '';
+          return `
+            <div class="op-item">
+              <div>
+                <div class="op-desc">${escapeHtml(op.description || '(no description)')}</div>
+                <div class="op-meta">${date} • by ${escapeHtml(op.createdBy || 'system')}</div>
+              </div>
+              <div class="op-amount ${cls}">${money(op.amount)}</div>
+            </div>`;
+        }).join('');
+      }
+
+      async function loadDashboard() {
+        try {
+          const data = await callServer('getDashboardData', state.sessionToken, state.selectedChildId);
+
+          if (state.user.role === 'parent') {
+            el('parentPanel').classList.remove('hidden');
+            el('parentKidPicker').classList.remove('hidden');
+            renderKidSelectors(data.kids || []);
+            if (!state.selectedChildId && data.kids && data.kids.length) {
+              state.selectedChildId = data.kids[0].childId;
+              el('kidSelect').value = state.selectedChildId;
+              el('parentKid').value = state.selectedChildId;
+              return loadDashboard();
+            }
+          } else {
+            el('parentPanel').classList.add('hidden');
+            el('parentKidPicker').classList.add('hidden');
+          }
+
+          el('budgetValue').textContent = money(data.balance || 0);
+          renderOperations(data.operations || []);
+        } catch (error) {
+          setStatus('opStatus', error.message, 'error');
+        }
+      }
+
+      async function saveOperation() {
+        try {
+          setStatus('opStatus', 'Saving operation...', '');
+          const payload = {
+            childId: el('parentKid').value,
+            type: el('opType').value,
+            amount: Number(el('opAmount').value),
+            description: el('opDescription').value
+          };
+
+          await callServer('createOperation', state.sessionToken, payload);
+          setStatus('opStatus', 'Operation saved.', 'success');
+          el('opAmount').value = '';
+          el('opDescription').value = '';
+          state.selectedChildId = payload.childId;
+          el('kidSelect').value = payload.childId;
+          await loadDashboard();
+        } catch (error) {
+          setStatus('opStatus', error.message, 'error');
+        }
+      }
+
+      async function logout() {
+        try {
+          await callServer('logout', state.sessionToken);
+        } finally {
+          state.sessionToken = '';
+          state.user = null;
+          state.selectedChildId = '';
+          el('appView').classList.add('hidden');
+          el('loginView').classList.remove('hidden');
+          el('password').value = '';
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      el('loginBtn').addEventListener('click', handleLogin);
+      el('logoutBtn').addEventListener('click', logout);
+      el('saveOpBtn').addEventListener('click', saveOperation);
+      el('kidSelect').addEventListener('change', async (e) => {
+        state.selectedChildId = e.target.value;
+        el('parentKid').value = state.selectedChildId;
+        await loadDashboard();
+      });
+    </script>
+  </body>
+</html>
