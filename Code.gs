@@ -12,6 +12,9 @@
 const SHEET_USERS = 'Users';
 const SHEET_OPERATIONS = 'Operations';
 const SESSION_TTL_SECONDS = 60 * 60 * 8; // 8 hours
+// Optional: set this when the script is standalone.
+// Leave empty when script is bound to the target spreadsheet.
+const SPREADSHEET_ID = '';
 
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
@@ -224,11 +227,26 @@ function getOperationsByChildId_(childId) {
 }
 
 function getSheet_(name) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  const spreadsheet = getSpreadsheet_();
+  const sheet = spreadsheet.getSheetByName(name);
   if (!sheet) {
     throw new Error('Missing sheet: ' + name);
   }
   return sheet;
+}
+
+function getSpreadsheet_() {
+  if (SPREADSHEET_ID) {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
+
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (!active) {
+    throw new Error(
+      'No active spreadsheet found. Either bind this Apps Script project to a spreadsheet or set SPREADSHEET_ID in Code.gs.'
+    );
+  }
+  return active;
 }
 
 function roundTo2_(n) {
